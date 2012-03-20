@@ -78,7 +78,7 @@ the user just pass in the array with all of the parameters manually.
 Anyway, this is how you would use the gem to create a resource:
 
   require 'opsview_rest'
-  connection = OpsviewRest.new(:url => "https://example.com/rest", :username => "hi", :password => "hello")
+  connection = OpsviewRest.new("https://example.com/rest", {:username => "hi", :password => "hello"})
   host = connection.create(:name    => "foobar",
                            :ip      => "192.168.1.1",
                            :type    => :host,
