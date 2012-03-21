@@ -1,29 +1,12 @@
-require 'opsview_rest/mixin'
+require 'opsview_rest/entity'
 
 class OpsviewRest
-  class Hosttemplate
+  class HostTemplate < Entity
 
-    include OpsviewRest::Mixin
+    TYPE = "hosttemplate"
 
-    attr_accessor :options, :opsview, :resource_type
-
-    def initialize(opsview, options = {})
-      @options = {
-        :name => "Unknown",
-        :description => "Unknown",
-        :servicechecks => [],
-        :managementurls => [],
-        :save    => true,
-        :replace => false
-      }.update options
-
-      @opsview = opsview
-      @resource_type = @options[:type]
-
-      @options[:servicechecks] = @options[:servicechecks].map { |x| { "name" => x } }
-
-      save(@options[:replace]) if @options[:save]
+    def initialize(opsview, options)
+      super(TYPE, opsview, options)
     end
-
   end
 end
