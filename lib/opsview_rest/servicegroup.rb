@@ -1,27 +1,12 @@
-require 'opsview_rest/mixin'
+require 'opsview_rest/entity'
 
 class OpsviewRest
-  class Servicegroup
+  class ServiceGroup < Entity
 
-    include OpsviewRest::Mixin
+    TYPE = "servicegroup"
 
-    attr_accessor :options, :opsview, :resource_type
-
-    def initialize(opsview, options = {})
-      @options = {
-        :name => "Unknown",
-        :servicechecks => [ "" ],
-        :save    => true,
-        :replace => false
-      }.update options
-
-      @opsview = opsview
-      @resource_type = @options[:type]
-
-      @options[:servicechecks] = @options[:servicechecks].map { |x| { "name" => x } }
-
-      save(@options[:replace]) if @options[:save]
+    def initialize(opsview, options)
+      super(TYPE, opsview, options)
     end
-
   end
 end
