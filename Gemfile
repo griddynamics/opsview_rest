@@ -2,7 +2,7 @@ source 'http://rubygems.org'
 
 gem 'rest-client', :require=>"rest_client"
 gem 'json'
-
+gem 'rspec'
 
 group :development do
   gem 'rake'

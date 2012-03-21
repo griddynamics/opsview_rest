@@ -1,3 +1,4 @@
+require 'rubygems'
 require 'rest-client'
 require 'json'
 
@@ -5,7 +6,7 @@ class OpsviewRest
 
   attr_accessor :url, :username, :password, :rest
 
-  def initialize(url, options = {})
+  def initialize(url, options = {}, rest = nil)
     options = {
       :username => "api",
       :password => "changeme",
@@ -15,7 +16,12 @@ class OpsviewRest
     @url      = url
     @username = options[:username]
     @password = options[:password]
-    @rest     = RestClient::Resource.new("#{@url}/rest/", :headers => { :content_type => 'application/json' })
+
+    if rest.nil?
+      @rest = RestClient::Resource.new("#{@url}/rest/", :headers => { :content_type => 'application/json' })
+    else
+      @rest = rest
+    end
 
     login if options[:connect]
   end
@@ -31,89 +37,18 @@ class OpsviewRest
     delete('login')
   end
 
-  def create(options = {})
-    case options[:type]
-    when :attribute
-      require 'opsview_rest/attribute'
-      OpsviewRest::Attribute.new(self, options)
-    when :contact
-      require 'opsview_rest/contact'
-      OpsviewRest::Contact.new(self, options)
-    when :host
-      require 'opsview_rest/host'
-      OpsviewRest::Host.new(self, options)
-    when :hostcheckcommand
-      require 'opsview_rest/hostcheckcommand'
-      OpsviewRest::Hostcheckcommand.new(self, options)
-    when :hostgroup
-      require 'opsview_rest/hostgroup'
-      OpsviewRest::Hostgroup.new(self, options)
-    when :hosttemplate
-      require 'opsview_rest/hosttemplate'
-      OpsviewRest::Hosttemplate.new(self, options)
-    when :keyword
-      require 'opsview_rest/keyword'
-      OpsviewRest::Keyword.new(self, options)
-    when :monitoring_server
-      require 'opsview_rest/monitoring_server'
-      OpsviewRest::MonitoringServer.new(self, options)
-    when :notification_method
-      require 'opsview_rest/notification_method'
-      OpsviewRest::NotificationMethod.new(self, options)
-    when :role
-      require 'opsview_rest/role'
-      OpsviewRest::Role.new(self, options)
-    when :servicecheck
-      require 'opsview_rest/servicecheck'
-      OpsviewRest::Servicecheck.new(self, options)
-    when :servicegroup
-      require 'opsview_rest/servicegroup'
-      OpsviewRest::Servicegroup.new(self, options)
-    when :timeperiod
-      require 'opsview_rest/timeperiod'
-      OpsviewRest::Timeperiod.new(self, options)
-    else
-      raise "Type not implemented yet."
-    end
-  end
-
-  def list(options = {})
-    options = {
-      :type => "host"
-    }.update options
-
-    get("config/#{options[:type]}")
-  end
-
   def reload
     get("reload")
   end
 
-  def find(options = {})
-    options = {
-      :type => "host",
-      :name => nil
-    }.update options
-
-    unless name
-      raise "Need to specify the name of the object."
-    else
-      get("config/#{options[:type]}?s.name=#{options[:name]}", :rows => :all)
+  def create(options = {})
+    if options[:type].nil? and options[:type].empty?
+      raise "Type is empty"
     end
-  end
 
-  def purge(options = {})
-    options = {
-      :type => "host",
-      :name => nil
-    }.update options
-
-    unless name
-      raise "Need to specify the name of the object."
-    else
-      id = find(:type => options[:type], :name => options[:name])[0]["id"]
-      delete("config/#{options[:type]}/#{id}")
-    end
+    require 'opsview_rest/entity'
+    entity = OpsviewRest::Entity.new(options[:type], self, options)
+    entity.create
   end
 
   def get(path_part, additional_headers = {}, &block)
@@ -137,12 +72,12 @@ class OpsviewRest
       response = block.call
       response.body
     rescue RestClient::Exception => e
-      puts "I have #{e.inspect} with #{e.http_code}"
       if e.http_code == 307
         get(e.response)
       end
       e.response
     end
+
     parse_response(JSON.parse(response_body))
   end
 
@@ -150,7 +85,7 @@ class OpsviewRest
     # We've got an error if there's "message" and "detail" fields
     # in the response
     if response["message"] and response["detail"]
-      raise Opsview::Exceptions::RequestFailed, "Request failed: #{response["message"]}, detail: #{response["detail"]}"
+      raise "Request failed: #{response["message"]}, detail: #{response["detail"]}"
     # If we have a token, return that:
     elsif response["token"]
       response

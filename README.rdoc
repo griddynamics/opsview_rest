@@ -78,18 +78,32 @@ the user just pass in the array with all of the parameters manually.
 Anyway, this is how you would use the gem to create a resource:
 
   require 'opsview_rest'
-  connection = OpsviewRest.new(:url => "https://example.com/rest", :username => "hi", :password => "hello")
-  host = connection.create(:name    => "foobar",
-                           :ip      => "192.168.1.1",
-                           :type    => :host,
-                           :replace => false)
+  opsview = OpsviewRest.new("http://127.0.0.1", {:username => "admin", :password => "initial"})
 
-  # Let's say we want to peer into what we have so far for hosts:
+  options = {
+         :name    => "foobar",
+         :ip      => "192.168.1.1"
+  }
 
-  connection = Opsview.new(...)
-  hosts = connection.list(:type => "host")
+  # Create new host entity
+  host = OpsviewRest::Host.new(opsview, options)
+  host.create()
 
-  # And what if we knew the name of the server and wanted to delete it?
+  # Get list of hosts
+  hosts = host.list()
+  puts hosts
 
-  connection = Opsview.new(...)
-  connection.purge(:type => "host", :name => "foobar")
+  # Get information about host
+  details = host.details
+  puts details
+
+  # Update host
+  options[:ip] = "192.168.1.2"
+  host = OpsviewRest::Host.new(opsview, options)
+  host.update()
+
+  # Delete host
+  host.delete()
+
+  # Find hosts
+  host.find("ip", "192.168.1.2")
