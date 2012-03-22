@@ -1,20 +1,18 @@
-require 'opsview_rest/action_mixin'
-
 class OpsviewRest
   class Entity
+    attr_accessor :properties
 
-    include OpsviewRest::ActionMixin
-
-    attr_accessor :options, :opsview
-
-    def initialize(type, opsview, options = {})
+    def initialize(type, properties = {})
       if type.nil? or type.empty?
         raise "Entity type should be specified."
       else
-        options[:type] = type
+        properties[:type] = type
       end
-      @options = options
-      @opsview = opsview
+      @properties = properties
+    end
+
+    def to_json
+      properties.to_json
     end
   end
 end

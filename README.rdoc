@@ -77,33 +77,32 @@ the user just pass in the array with all of the parameters manually.
 
 Anyway, this is how you would use the gem to create a resource:
 
+!NOTE: All entity properties should have SYMBOL keys! {:name => "foobar", :ip => "localhost"}
+
   require 'opsview_rest'
   opsview = OpsviewRest.new("http://127.0.0.1", {:username => "admin", :password => "initial"})
 
-  options = {
+  properties = {
          :name    => "foobar",
          :ip      => "192.168.1.1"
   }
 
-  # Create new host entity
-  host = OpsviewRest::Host.new(opsview, options)
-  host.create()
+  # Create a new host entity
+  host = OpsviewRest::Host.new(properties)
+  opsview.create(host)
 
-  # Get list of hosts
-  hosts = host.list()
-  puts hosts
+  # Update/create host
+  host.properties[:ip] = "192.168.1.2"
+  opsview.update(host)
 
-  # Get information about host
-  details = host.details
-  puts details
+  # Find entities with specified properties
+  opsview.find(properties)
 
-  # Update host
-  options[:ip] = "192.168.1.2"
-  host = OpsviewRest::Host.new(opsview, options)
-  host.update()
+  # Remove host
+  opsview.remove(host)
 
-  # Delete host
-  host.delete()
+  # Reload opsview
+  opsview.reload
 
-  # Find hosts
-  host.find("ip", "192.168.1.2")
+  # List hosts
+  opsview.list("host")
