@@ -118,12 +118,17 @@ class OpsviewRest
 
   # returns an entity details by its type and name
   def details_by_type_and_name(type, name)
-    details_by_type_and_id(type, get_id_by_type_and_name(type, name))
+    entity_id = get_id_by_type_and_name(type, name)
+    if entity_id.nil?
+      raise "Id for entity with type '#{type}' and name '#{name}' can't be found'"
+    else
+      details_by_type_and_id(type, entity_id)
+    end
   end
 
   # return an entity details by its type and id
   def details_by_type_and_id(type, id)
-    delete(resource_path_for_entity_type(type) + "/#{id}")
+    get(resource_path_for_entity_type(type) + "/#{id}")
   end
 
   # searches entities that have specified properties
