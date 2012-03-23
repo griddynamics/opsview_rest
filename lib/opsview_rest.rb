@@ -1,6 +1,7 @@
 require 'rubygems'
 require 'rest-client'
 require 'json'
+require 'opsview_helper'
 
 class OpsviewRest
 
@@ -50,9 +51,13 @@ class OpsviewRest
 
   # reloads opsview only when at least one configuration change requires a reload
   def reload
-    reload_status = get("reload")
-    if reload_status["configuration_status"] == "pending"
-      post("reload", {})
+    status = reload_status
+    if status.has_key?(:configuration_status)
+      if status[:configuration_status] == "pending"
+        post("reload", {})
+      end
+    else
+      raise "Configuration status can't be found"
     end
   end
 
@@ -61,7 +66,6 @@ class OpsviewRest
     check_property_value(properties, :type)
 
     require 'opsview_rest/entity'
-
     entity = OpsviewRest::Entity.new(properties[:type], properties)
     create(entity)
   end
@@ -156,6 +160,7 @@ class OpsviewRest
     if result.empty?
       nil
     else
+      p result
       result[0][:id]
     end
   end
@@ -225,38 +230,22 @@ class OpsviewRest
       response_body = "{}"
     end
 
-    parse_response(JSON.parse(response_body))
+    parse_response(OpsviewRest::OpsviewHelper.symbolize_keys(JSON.parse(response_body)))
   end
 
   # parses response body
   def parse_response(response)
     # We've got an error if there's "message" and "detail" fields
     # in the response
-    if response["message"] and response["detail"]
-      raise "Request failed: #{response["message"]}, detail: #{response["detail"]}"
+    if response[:message] and response[:detail]
+      raise "Request failed: #{response[:message]}, detail: #{response[:detail]}"
       # If we have a list of objects, return the list:
-    elsif response["list"]
-      symbolize_keys response["list"]
-    elsif response["object"]
-      symbolize_keys response["object"]
+    elsif response[:list]
+      response[:list]
+    elsif response[:object]
+      response[:object]
     else
-      symbolize_keys response
-    end
-  end
-
-  def symbolize_keys arg
-    case arg
-      when Array
-        arg.map { |elem| symbolize_keys elem }
-      when Hash
-        Hash[
-            arg.map { |key, value|
-              k = key.is_a?(String) ? key.to_sym : key
-              v = symbolize_keys value
-              [k,v]
-            }]
-      else
-        arg
+      response
     end
   end
 end
