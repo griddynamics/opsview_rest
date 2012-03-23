@@ -5,8 +5,8 @@ class OpsviewRest
 
     TYPE = "servicegroup"
 
-    def initialize(opsview, options)
-      super(TYPE, opsview, options)
+    def initialize(properties)
+      super(TYPE, properties)
     end
   end
 end
