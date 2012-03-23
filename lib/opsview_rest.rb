@@ -165,7 +165,6 @@ class OpsviewRest
     if result.empty?
       nil
     else
-      p result
       result[0][:id]
     end
   end
