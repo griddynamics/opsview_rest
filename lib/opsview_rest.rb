@@ -61,8 +61,6 @@ class OpsviewRest
           end while result.has_key?(:status) and result[:status] == "1"
         end
         result
-    else
-      raise "Configuration status can't be found"
     end
   end
 

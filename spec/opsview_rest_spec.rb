@@ -2,9 +2,13 @@ require 'rubygems'
 require 'rspec'
 require 'rspec/mocks'
 require 'rest-client'
-require '../lib/opsview_rest'
-require '../lib/opsview_rest/entity'
-require '../lib/opsview_rest/host'
+#require '../lib/opsview_rest'
+#require '../lib/opsview_rest/entity'
+#require '../lib/opsview_rest/host'
+
+require File.expand_path('../../lib/opsview_rest', __FILE__)
+require File.expand_path('../../lib/opsview_rest/entity', __FILE__)
+require File.expand_path('../../lib/opsview_rest/host', __FILE__)
 require 'net/http'
 
 describe OpsviewRest do
@@ -84,14 +88,6 @@ describe OpsviewRest do
     @opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
 
     @opsview.reload.should eq nil
-  end
-
-  it "should raise exception when configuration status can't be found" do
-    @rest.stub(:get).and_return(@response)
-
-    @opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
-
-    expect{@opsview.reload}.to raise_error(RuntimeError)
   end
 
   it "should be able to create entity from properties" do
