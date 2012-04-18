@@ -51,11 +51,16 @@ class OpsviewRest
 
   # reloads opsview only when at least one configuration change requires a reload
   def reload
-    status = reload_status
-    if status.has_key?(:configuration_status)
-      if status[:configuration_status] == "pending"
-        post("reload", {})
-      end
+    status = reload_status()
+    if status.has_key?(:configuration_status) and status[:configuration_status] == "pending"
+        result = post("reload", {})
+        if result.has_key?(:status) and result[:status] == "1"
+          begin
+            sleep 5
+            result = post("reload", {})
+          end while result.has_key?(:status) and result[:status] == "1"
+        end
+        result
     else
       raise "Configuration status can't be found"
     end
