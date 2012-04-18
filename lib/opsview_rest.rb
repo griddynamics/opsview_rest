@@ -54,12 +54,12 @@ class OpsviewRest
     status = reload_status()
     if status.has_key?(:configuration_status) and status[:configuration_status] == "pending"
         result = post("reload", {})
-        if result.has_key?(:status) and result[:status] == "1"
-          begin
-            sleep 5
-            result = post("reload", {})
-          end while result.has_key?(:status) and result[:status] == "1"
-        end
+        #if result.has_key?(:status) and result[:status] == "1"
+        #  begin
+        #    sleep 5
+        #    result = post("reload", {})
+        #  end while result.has_key?(:status) and result[:status] == "1"
+        #end
         result
     end
   end
