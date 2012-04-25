@@ -3,7 +3,13 @@ require 'rest-client'
 require 'json'
 require 'opsview_helper'
 
+#TODO: !WARNING! Only basic manual testing of a new functionality has been done.
+#TODO: Rspecs for all functionality should be written.
+
 class OpsviewRest
+
+  RELOAD_TIMEOUT_IN_SEC = 40
+  WAIT_PERIOD_IN_SEC = 10
 
   attr_accessor :url, :username, :password, :rest
 
@@ -34,6 +40,7 @@ class OpsviewRest
     response = post("login", { :username => @username, :password => @password })
     @rest.headers[:x_opsview_token]    = response[:token]
     @rest.headers[:x_opsview_username] = @username
+
     response
   end
 
@@ -51,19 +58,33 @@ class OpsviewRest
 
   # reloads opsview only when at least one configuration change requires a reload
   def reload
-    status = reload_status()
-    if status.has_key?(:configuration_status) and status[:configuration_status] == "pending"
-        result = post("reload", {})
-        if result.has_key?(:status) and result[:status] == "1"
-          begin
-            sleep 5
-            result = post("reload", {})
-          end while result.has_key?(:status) and result[:status] == "1"
+    start_time = Time.now.to_i
+
+    begin
+      status = reload_status
+
+      if status.has_key?(:configuration_status) # opsview is not in reloading status
+        if status[:configuration_status] == "pending" # reload is required
+
+          result = post("reload", {})
+          if result.has_key?(:configuration_status) # reload has been finished, there is no concurrent reloads
+
+            if result[:server_status] == "0" # server status is running with no warnings after reload
+              return result
+            else
+              raise "Reload has been done with server status code #{server_status}"
+            end
+          end
+        else
+          return status
         end
-        result
-    else
-      raise "Configuration status can't be found"
-    end
+      end
+
+      sleep WAIT_PERIOD_IN_SEC
+
+    end while Time.now.to_i - start_time <= RELOAD_TIMEOUT_IN_SEC
+
+    raise "Reload has been failed by timeout (#{RELOAD_TIMEOUT_IN_SEC} seconds)"
   end
 
   # creates an entity based on its properties
@@ -204,57 +225,101 @@ class OpsviewRest
 
   # sends get request
   def get(path_part, additional_headers = {}, &block)
-    api_request { @rest[path_part].get(additional_headers, &block) }
+    begin
+      api_request { @rest[path_part].get(additional_headers, &block) }
+    rescue RestClient::Exception => e
+      if e.http_code == 401
+        login
+        api_request { @rest[path_part].get(additional_headers, &block) }
+      end
+    end
   end
 
   # sends delete request
   def delete(path_part, additional_headers = {}, &block)
-    api_request { @rest[path_part].delete(additional_headers, &block) }
+    begin
+      api_request { @rest[path_part].delete(additional_headers, &block) }
+    rescue RestClient::Exception => e
+      if e.http_code == 401
+        login
+        api_request { @rest[path_part].delete(additional_headers, &block) }
+      end
+    end
   end
 
   # sends post request
   def post(path_part, payload, additional_headers = {}, &block)
-    api_request { @rest[path_part].post(payload, additional_headers, &block) }
+    begin
+      api_request { @rest[path_part].post(payload, additional_headers, &block) }
+    rescue RestClient::Exception => e
+      if e.http_code == 401
+        login
+        api_request { @rest[path_part].post(payload, additional_headers, &block) }
+      end
+    end
   end
 
   # sends put request
   def put(path_part, payload, additional_headers = {}, &block)
-    api_request { @rest[path_part].put(payload, additional_headers, &block) }
+    begin
+      api_request { @rest[path_part].put(payload, additional_headers, &block) }
+    rescue RestClient::Exception => e
+      if e.http_code == 401
+        login
+        api_request { @rest[path_part].put(payload, additional_headers, &block) }
+      end
+    end
   end
 
   # sends API request and parses response body
   def api_request(&block)
-    response_body = begin
-      response = block.call
-      response.body
+    response = begin
+      block.call([])
     rescue RestClient::Exception => e
-      if e.http_code == 307
-        get(e.response)
+      if e.http_code == 401 # raise exception in case of token expiration
+        raise e
+      else
+        e.response
       end
-      e.response
     end
+
+    parse_and_format_response response
+  end
+
+  # parses and format response body, handles errors
+  def parse_and_format_response(response)
+    response_body = response.body
 
     # is used for logout action that returns empty body
     if response_body.empty?
       response_body = "{}"
     end
 
-    parse_response(OpsviewRest::OpsviewHelper.symbolize_keys(JSON.parse(response_body)))
-  end
+    body_hash = OpsviewHelper.symbolize_keys(JSON.parse(response_body))
 
-  # parses response body
-  def parse_response(response)
-    # We've got an error if there's "message" and "detail" fields
-    # in the response
-    if response[:message] and response[:detail]
-      raise "Request failed: #{response[:message]}, detail: #{response[:detail]}"
-      # If we have a list of objects, return the list:
-    elsif response[:list]
-      response[:list]
-    elsif response[:object]
-      response[:object]
+    if response.code == 200 || response.code == 409 # 409 - reload already in progress
+      if body_hash.has_key? :list
+        body_hash[:list]
+      elsif body_hash.has_key? :object
+        body_hash[:object]
+      else
+        body_hash
+      end
     else
-      response
+      error_message = "Request failed (code = #{response.code}):"
+
+      if body_hash.has_key? :message
+        error_message << " #{body_hash[:message]}"
+        if body_hash.has_key? :detail
+          error_message << ", details: #{body_hash[:detail]}"
+        end
+      elsif body_hash.has_key? :messages
+        body_hash[:messages].each { |message| error_message << " details: #{message[:detail]}" }
+      else
+        error_message << " unknown reason"
+      end
+
+      raise error_message
     end
   end
 end
