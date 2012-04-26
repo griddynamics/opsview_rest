@@ -8,8 +8,8 @@ require 'opsview_helper'
 
 class OpsviewRest
 
-  RELOAD_TIMEOUT_IN_SEC = 40
-  WAIT_PERIOD_IN_SEC = 10
+  RELOAD_TIMEOUT_IN_SEC = 30 # after this time reload operation will be failed with timeout exception
+  RELOAD_INTERVAL_IN_SEC = 10 # interval between reloads
 
   attr_accessor :url, :username, :password, :rest
 
@@ -65,14 +65,12 @@ class OpsviewRest
 
       if status.has_key?(:configuration_status) # opsview is not in reloading status
         if status[:configuration_status] == "pending" # reload is required
-
           result = post("reload", {})
           if result.has_key?(:configuration_status) # reload has been finished, there is no concurrent reloads
-
             if result[:server_status] == "0" # server status is running with no warnings after reload
               return result
             else
-              raise "Reload has been done with server status code #{server_status}"
+              raise "Reload has been done with server status code #{result[:server_status]}"
             end
           end
         else
@@ -80,7 +78,7 @@ class OpsviewRest
         end
       end
 
-      sleep WAIT_PERIOD_IN_SEC
+      sleep RELOAD_INTERVAL_IN_SEC
 
     end while Time.now.to_i - start_time <= RELOAD_TIMEOUT_IN_SEC
 
@@ -121,7 +119,7 @@ class OpsviewRest
   def remove_by_type_and_name(type, name)
     entity_id = get_id_by_type_and_name(type, name)
     if entity_id.nil?
-      raise "Id for entity with type '#{type}' and name '#{name}' can't be found'"
+      raise "Id for entity with type '#{type}' and name '#{name}' can't be found"
     else
       remove_by_type_and_id(type, entity_id)
     end
@@ -146,7 +144,7 @@ class OpsviewRest
   def details_by_type_and_name(type, name)
     entity_id = get_id_by_type_and_name(type, name)
     if entity_id.nil?
-      raise "Id for entity with type '#{type}' and name '#{name}' can't be found'"
+      raise "Id for entity with type '#{type}' and name '#{name}' can't be found"
     else
       details_by_type_and_id(type, entity_id)
     end
