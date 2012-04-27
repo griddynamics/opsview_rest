@@ -111,6 +111,27 @@ describe "OpsView functionality" do
     expect { opsview.reload }.to raise_error(RuntimeError)
   end
 
+  it "should raise exception by timeout when reload can't be started" do
+    @rest.stub(:get).and_return(create_response(RELOAD_IN_PROGRESS_BODY, 200))
+
+    opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
+
+    expect {
+      opsview.reload
+    }.to raise_error(RuntimeError, "Reload has been failed by timeout (#{OpsviewRest::RELOAD_TIMEOUT_IN_SEC} seconds)")
+  end
+
+  it "should raise exception by timeout when reload can't be finished" do
+    @rest.stub(:get).and_return(create_response(NEED_RELOAD_RESPONSE_BODY, 200))
+    @rest.stub(:post).and_return(create_response(RELOAD_IN_PROGRESS_BODY, 200))
+
+    opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
+
+    expect {
+      opsview.reload
+    }.to raise_error(RuntimeError, "Reload has been failed by timeout (#{OpsviewRest::RELOAD_TIMEOUT_IN_SEC} seconds)")
+  end
+
   it "should not reload when configuration status is uptodate" do
     @rest.stub(:get).and_return(create_response(NO_RELOAD_RESPONSE_BODY, 200))
 
