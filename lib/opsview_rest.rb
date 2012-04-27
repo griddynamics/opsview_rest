@@ -63,7 +63,7 @@ class OpsviewRest
     begin
       status = reload_status
 
-      if status.has_key?(:configuration_status) # opsview is not in reloading status
+      if status[:server_status] == "0" # opsview is not in reloading status
         if status[:configuration_status] == "pending" # reload is required
           result = post("reload", {})
           if result.has_key?(:configuration_status) # reload has been finished, there is no concurrent reloads
