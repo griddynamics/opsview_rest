@@ -8,7 +8,7 @@ require 'opsview_helper'
 
 class OpsviewRest
 
-  RELOAD_TIMEOUT_IN_SEC = 30 # after this time reload operation will be failed with timeout exception
+  RELOAD_TIMEOUT_IN_SEC = 60 # after this time reload operation will be failed with timeout exception
   RELOAD_INTERVAL_IN_SEC = 10 # interval between reloads
 
   attr_accessor :url, :username, :password, :rest
