@@ -69,7 +69,7 @@ class OpsviewRest
           if result.has_key?(:configuration_status) # reload has been finished, there is no concurrent reloads
             if result[:server_status] == "0" # server status is running with no warnings after reload
               return result
-            else
+            elsif result[:server_status] != "1"
               raise "Reload has been done with server status code #{result[:server_status]}"
             end
           end
