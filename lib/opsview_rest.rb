@@ -64,7 +64,8 @@ class OpsviewRest
         if status[:configuration_status] == "pending" # reload is required
           result = post("reload", {})
           if result.has_key?(:configuration_status) # reload has been finished, there is no concurrent reloads
-            if result[:server_status] == "0" # server status is running with no warnings after reload
+            if result[:server_status] == "0" or result[:server_status] == "1"
+              # server status is running with no warnings and errors after reload
               return result
             else
               raise "Reload has been done with server status code #{result[:server_status]}"

@@ -48,7 +48,10 @@ describe "OpsView functionality" do
   RELOAD_COMPLETED_NO_ERR_HASH = {:configuration_status => "uptodate", :server_status => "0"}
   RELOAD_COMPLETED_NO_ERR_BODY = "{\"configuration_status\" : \"uptodate\", \"server_status\" : \"0\"}"
 
-  RELOAD_COMPLETED_WITH_ERR_BODY = "{\"configuration_status\" : \"uptodate\", \"server_status\" : \"1\"}"
+  RELOAD_COMPLETED_WITH_ERR_BODY = "{\"configuration_status\" : \"uptodate\", \"server_status\" : \"3\"}"
+
+  RELOAD_COMPLETED_WITH_1_HASH = {:configuration_status => "uptodate", :server_status => "1"}
+  RELOAD_COMPLETED_WITH_1_BODY = "{\"configuration_status\" : \"uptodate\", \"server_status\" : \"1\"}"
 
   RELOAD_IN_PROGRESS_STATUS_BODY = "{\"server_status\" : \"1\"}"
 
@@ -95,22 +98,22 @@ describe "OpsView functionality" do
     opsview.reload.should eq RELOAD_COMPLETED_NO_ERR_HASH
   end
 
-  it "should raise exception after reload when server status != 0" do
+  it "should not raise exception after reload when server status == 1" do
     @rest.stub(:get).and_return(create_response(NEED_RELOAD_RESPONSE_BODY, 200))
-    @rest.stub(:post).and_return(create_response(RELOAD_COMPLETED_WITH_ERR_BODY, 200))
+    @rest.stub(:post).and_return(create_response(RELOAD_COMPLETED_WITH_1_BODY, 200))
 
     opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
 
-    expect { opsview.reload }.to raise_error(RuntimeError, "Reload has been done with server status code 1")
+    opsview.reload.should eq RELOAD_COMPLETED_WITH_1_HASH
   end
 
-  it "should raise exception after reload when server status != 0" do
+  it "should raise exception after reload when server status != 0 or != 1" do
     @rest.stub(:get).and_return(create_response(NEED_RELOAD_RESPONSE_BODY, 200))
     @rest.stub(:post).and_return(create_response(RELOAD_COMPLETED_WITH_ERR_BODY, 200))
 
     opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
 
-    expect { opsview.reload }.to raise_error(RuntimeError, "Reload has been done with server status code 1")
+    expect { opsview.reload }.to raise_error(RuntimeError, "Reload has been done with server status code 3")
   end
 
   it "should raise exception by timeout when reload can't be started" do
