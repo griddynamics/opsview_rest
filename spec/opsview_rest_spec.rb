@@ -50,7 +50,9 @@ describe "OpsView functionality" do
 
   RELOAD_COMPLETED_WITH_ERR_BODY = "{\"configuration_status\" : \"uptodate\", \"server_status\" : \"1\"}"
 
-  RELOAD_IN_PROGRESS_BODY = "{\"status\" : \"0\"}"
+  RELOAD_IN_PROGRESS_STATUS_BODY = "{\"server_status\" : \"1\"}"
+
+  RELOAD_IN_PROGRESS_RELOAD_BODY = "{\"status\" : \"1\"}"
 
   default_host = OpsviewRest::Host.new(PROPERTIES)
 
@@ -108,11 +110,11 @@ describe "OpsView functionality" do
 
     opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
 
-    expect { opsview.reload }.to raise_error(RuntimeError)
+    expect { opsview.reload }.to raise_error(RuntimeError, "Reload has been done with server status code 1")
   end
 
   it "should raise exception by timeout when reload can't be started" do
-    @rest.stub(:get).and_return(create_response(RELOAD_IN_PROGRESS_BODY, 200))
+    @rest.stub(:get).and_return(create_response(RELOAD_IN_PROGRESS_STATUS_BODY, 200))
 
     opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
 
@@ -123,7 +125,7 @@ describe "OpsView functionality" do
 
   it "should raise exception by timeout when reload can't be finished" do
     @rest.stub(:get).and_return(create_response(NEED_RELOAD_RESPONSE_BODY, 200))
-    @rest.stub(:post).and_return(create_response(RELOAD_IN_PROGRESS_BODY, 200))
+    @rest.stub(:post).and_return(create_response(RELOAD_IN_PROGRESS_RELOAD_BODY, 200))
 
     opsview = OpsviewRest.new(URL, {:username => USERNAME, :password => PASSWORD}, @rest)
 

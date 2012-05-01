@@ -3,12 +3,9 @@ require 'rest-client'
 require 'json'
 require 'opsview_helper'
 
-#TODO: !WARNING! Only basic manual testing of a new functionality has been done.
-#TODO: Rspecs for all functionality should be written.
-
 class OpsviewRest
 
-  RELOAD_TIMEOUT_IN_SEC = 60 # after this time reload operation will be failed with timeout exception
+  RELOAD_TIMEOUT_IN_SEC = 30 # after this time reload operation will be failed with timeout exception
   RELOAD_INTERVAL_IN_SEC = 10 # interval between reloads
 
   attr_accessor :url, :username, :password, :rest
@@ -63,13 +60,13 @@ class OpsviewRest
     begin
       status = reload_status
 
-      if status[:server_status] == "0" # opsview is not in reloading status
+      if status[:server_status] != "1" # opsview is not in reloading status
         if status[:configuration_status] == "pending" # reload is required
           result = post("reload", {})
           if result.has_key?(:configuration_status) # reload has been finished, there is no concurrent reloads
             if result[:server_status] == "0" # server status is running with no warnings after reload
               return result
-            elsif result[:server_status] != "1"
+            else
               raise "Reload has been done with server status code #{result[:server_status]}"
             end
           end
