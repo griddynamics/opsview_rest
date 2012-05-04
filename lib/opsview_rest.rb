@@ -200,7 +200,7 @@ class OpsviewRest
   # returns resource path for a specified entity
   def resource_path_for_entity_type(type)
     check_property(type)
-    "config/#{type}"
+    "config/#{type}?rows=all"
   end
 
   private
