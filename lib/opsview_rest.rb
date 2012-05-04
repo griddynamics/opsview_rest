@@ -34,7 +34,8 @@ class OpsviewRest
   def login
     @rest.headers[:content_type] = "application/json"
 
-    response = post("login", { :username => @username, :password => @password })
+    response = api_request { @rest["login"].post({:username => @username, :password => @password}) }
+
     @rest.headers[:x_opsview_token]    = response[:token]
     @rest.headers[:x_opsview_username] = @username
 
