@@ -131,7 +131,7 @@ class OpsviewRest
 
   # lists entities of a specified type
   def list(type)
-    get(resource_path_for_entity_type(type))
+    get(resource_path_for_entity_type(type) + "?rows=all")
   end
 
   # returns an entity details using its type and name
@@ -201,7 +201,7 @@ class OpsviewRest
   # returns resource path for a specified entity
   def resource_path_for_entity_type(type)
     check_property(type)
-    "config/#{type}?rows=all"
+    "config/#{type}"
   end
 
   private
